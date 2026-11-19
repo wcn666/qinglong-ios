@@ -1,0 +1,48 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:          # 手动触发
+  push:
+    tags:
+      - 'v*'                  # 推 v 开头的 tag 也触发
+
+jobs:
+  build-ios:
+    runs-on: macos-13          # 固定 macOS 13，Xcode 14 兼容 Flutter 3.3.10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter 3.3.10（与项目 Dart 2.18 匹配）
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.3.10'
+          cache: true
+
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install --repo-update
+
+      - name: Build unsigned IPA
+        run: flutter build ipa --release --no-codesign
+
+      - name: Rename IPA with version
+        run: |
+          mkdir -p output
+          cp build/ios/ipa/*.ipa "output/qinglong-2.22-adapted.ipa"
+          ls -lh output/
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qinglong-ios-ipa
+          path: output/*.ipa
+          retention-days: 30

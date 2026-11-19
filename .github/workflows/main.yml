@@ -1,0 +1,59 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            $HOME/.pub-cache
+            $HOME/flutter
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '15'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.3.10'  # 指定 Flutter 版本为 3.3.10
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Update Gradle wrapper to compatible version
+        run: |
+          cd android
+          # 下载 gradle-6.7-all.zip 版本
+          curl -L https://services.gradle.org/distributions/gradle-6.7-all.zip -o gradle-6.7-all.zip
+          unzip gradle-6.7-all.zip -d $HOME
+          # 修改 gradle-wrapper.properties 文件
+          sed -i 's|distributionUrl=https\://services.gradle.org/distributions/gradle-.*-all.zip|distributionUrl=file://'$HOME'/gradle-6.7-all.zip|' gradle/wrapper/gradle-wrapper.properties
+
+      - name: Build APK (unsigned)
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-unsigned.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
