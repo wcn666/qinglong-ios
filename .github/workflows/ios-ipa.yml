@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-13          # 固定 macOS 13，Xcode 14 兼容 Flutter 3.3.10
+    runs-on: macos-14          # 固定 macOS 14，Xcode 15 兼容 Flutter 3.3.10
 
     steps:
       - name: Checkout code
