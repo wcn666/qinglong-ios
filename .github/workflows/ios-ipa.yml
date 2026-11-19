@@ -34,11 +34,18 @@ jobs:
       - name: Build unsigned IPA
         run: flutter build ipa --release --no-codesign
 
-      - name: Rename IPA with version
+      - name: Build IPA from xcarchive (no-codesign)
         run: |
-          mkdir -p output
-          cp build/ios/ipa/*.ipa "output/qinglong-2.22-adapted.ipa"
-          ls -lh output/
+          echo "=== archive 内容 ==="
+          find build/ios/archive/Runner.xcarchive/Products -maxdepth 3 -name "*.app"
+          APP=$(find build/ios/archive/Runner.xcarchive/Products -maxdepth 3 -name "Runner.app" | head -1)
+          if [ -z "$APP" ]; then echo "找不到 Runner.app"; exit 1; fi
+          mkdir -p output/Payload
+          cp -R "$APP" output/Payload/
+          cd output
+          zip -qry qinglong-2.22-adapted.ipa Payload
+          rm -rf Payload
+          ls -lh *.ipa
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
